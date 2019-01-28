@@ -17,7 +17,7 @@ How to build
 ----------------------------
 
 * Clone BasicJava repo: ```git clone https://github.com/alandariva/BasicJava.git```
-* Install dependencies with npm: ```npm install bootstrap```
+* Install dependencies with npm: ```npm install```
 * Run one build process: ```npm run build``` or ```npm run build-prod```
 
 The js files will be generated in /dist folder.
