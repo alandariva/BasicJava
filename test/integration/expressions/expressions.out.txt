@@ -1,0 +1,10 @@
+0
+2
+x: 5
+y: 8
+12
+SIM
+SIM
+Executou
+20
+11

@@ -1,0 +1,12 @@
+PEÇA:
+Nome peça: Processador
+Nome marca: Intel
+Ano fabricação: 2016
+valor: 400
+PROCESSADOR:
+Nome peça: Processador
+Nome marca: Intel
+Ano fabricação: 2016
+valor: 400
+ghz: 3
+bits: 64

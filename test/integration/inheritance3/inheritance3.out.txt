@@ -1,0 +1,2 @@
+The static method in Animal
+The instance method in Cat
