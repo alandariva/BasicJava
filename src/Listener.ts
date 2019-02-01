@@ -6,7 +6,7 @@ import * as Parser from "./Parser";
 import { ErrorListener } from "antlr4/error";
 
 /**
- * Realiza caminhada no programa.: any
+ * Base listener to walk in an Ast tree.
  */
 export abstract class BaseListener {
     userClass: Runtime.UserClass;
@@ -48,10 +48,10 @@ export abstract class BaseListener {
         let args = userMethod.getArguments();
         let methodDeclaration = userMethod.getMethodDeclaration();
 
-        // Argumentos
+        // Arguments from method
         for (let i = 0; i < args.length; i++) {
             this.enterArgumentDeclaration(args[i]);
-            // Não existe mais nenhum nodo filho, então não precisa visitar cada
+            // This is an leaf node, so there is no need to visit an argument
             this.exitArgumentDeclaration(args[i]);
         }
 
@@ -64,7 +64,7 @@ export abstract class BaseListener {
     _visitBlockStatement(blockStatement: Ast.BlockStatement, setLast: boolean = false): void {
         this.enterBlockStatement(blockStatement);
 
-        // Quando acontece algum erro no parser
+        // Blockstatement can be null in case parser fails
         if (blockStatement == null) {
             return;
         }
@@ -93,10 +93,6 @@ export abstract class BaseListener {
         if (statement instanceof Ast.VariableDeclaration) {
             this.enterVariableDeclaration(statement);
             this.exitVariableDeclaration(statement);
-            /*
-        } else if (statement instanceof Ast.VariableAssignment) {
-            this.enterVariableAssignment(statement);
-            this.exitVariableAssignment(statement); */
         } else if (statement instanceof Ast.BlockStatement) {
             this.enterBlockStatement(statement);
             this._visitBlockStatement(statement);
@@ -161,11 +157,6 @@ export abstract class BaseListener {
     enterStatementExprNode(node: Ast.ExprNode): void {}
     exitStatementExprNode(node: Ast.ExprNode): void {}
 
-/*
-    enterVariableAssignment(node: Ast.VariableAssignment): void {}
-    exitVariableAssignment(node: Ast.VariableAssignment): void {}
-    */
-
     enterIfStatement(node: Ast.IfStatement): void {}
     exitIfStatement(node: Ast.IfStatement): void {}
 
@@ -184,7 +175,7 @@ export abstract class BaseListener {
 }
 
 /**
- * Captura erros do parser do antlr e registra no parser.
+ * Catches errors from antlr parser and register them in to the BasicJavaParser.
  */
 export class AntlrParserListener extends ErrorListener {
     parser: Parser.BasicJavaParser;
@@ -197,8 +188,7 @@ export class AntlrParserListener extends ErrorListener {
     }
 
     syntaxError(recognizer: any, offendingSymbol: any, line: any, column: any, msg: any, e: any): void {
-        console.error(msg);
-        this.parser.addParserError('Erro de sintaxe: "' + offendingSymbol.text + '" é inesperado', this.fileName, {
+        this.parser.addParserError('Sintax error: "' + offendingSymbol.text + '" is unexpected', this.fileName, {
             startColumn: column,
             startLine: line,
             endColumn: 0,

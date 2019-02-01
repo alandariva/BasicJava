@@ -86,7 +86,7 @@ export class String extends Runtime.NativeClass {
             let internalString = value.resolveVariableSafe('internalString');
             return new Runtime.PrimitiveValue(internalString.value.getType(), internalString.value);
         }
-        console.error('Erro normalizando para primitivo');
+        console.error('Error converting to a primitive type');
         return value;
     }
 }

@@ -64,10 +64,10 @@ export class ExpressionResolver {
     }
 
     /**
-     * Verifica o tipo do resultado de uma expressõo binária.
-     * @param  {string} op      Operação
-     * @param  {Type}   lhsType Termo da esquerda da operação
-     * @param  {Type}   rhsType Termo da direita da operação
+     * Resolves the result type of an expression.
+     * @param  {string} op      Operation
+     * @param  {Type}   lhsType Left part of expression
+     * @param  {Type}   rhsType Right part of expression
      * @return {Type}
      */
     public resolveBinaryExprType(op: string, lhsType: Type, rhsType: Type, isVariable: boolean): Type {
@@ -117,11 +117,11 @@ export class ExpressionResolver {
                 return lhsType;
             }
         } else if ((lhsTypeName == 'String' || rhsTypeName == 'String') && (op == '+')) {
-            // No caso de + e pelo menos uma string, qualquer tipo é válido
+            // Signal "+" and anything
             return this.program.resolveType('String');
         } else if ((lhsTypeName == 'null' || lhsType instanceof BaseClass)
             && (rhsTypeName == 'null' || rhsType instanceof BaseClass)) {
-            // O null ou uma instância só pode ser comparado com == e !=
+            // Null or instance can only be compared with == e !=
             if (op == '==' || op == '!=') {
                 return this.program.resolveType('boolean');
             }
@@ -172,28 +172,28 @@ export class ExpressionResolver {
                     return { value: exprResul.variable.value, variable: exprResul.variable };
                 }
             } else {
-                console.error('Expressão unária não encontrada');
+                console.error('Unary expression not found');
                 return null;
             }
         } else if (unaryExpr.operator == '!') {
             if (exprResul.value instanceof PrimitiveValue) {
                 return { value: new PrimitiveValue(exprResul.value.type, !exprResul.value.rawValue), variable: exprResul.variable };
             } else {
-                console.error('Expressão unária não encontrada');
+                console.error('Unary expression not found');
                 return null;
             }
         } else if (unaryExpr.operator == '-') {
             if (exprResul.value instanceof PrimitiveValue) {
                 return { value: new PrimitiveValue(exprResul.value.type, -exprResul.value.rawValue), variable: exprResul.variable };
             } else {
-                console.error('Expressão unária não encontrada');
+                console.error('Unary expression not found');
                 return null;
             }
         } else if (unaryExpr.operator == '+') {
             // Aqui não precisa fazer nada
             return { value: exprResul.variable.value, variable: exprResul.variable };
         } else {
-            console.error('Erro expressão unária só funciona com primitiva');
+            console.error('Unary expression only works with primitive types');
         }
     }
 
@@ -229,7 +229,6 @@ export class ExpressionResolver {
                 }
             }
         } else {
-            // Quando um dos dois for objeto, ou está tentando realizar atribuição ou comparando se é igual ou diferente
             if (op == '=') {
                 lhs.variable.value = rhs.value;
                 return lhs.variable.value;
@@ -247,7 +246,7 @@ export class ExpressionResolver {
                 }
             } else {
                 if (op == '+') {
-                    // Verifica concatenação de string
+                    // Verifies string concatenation
                     let lValue: any;
                     let rValue: any;
                     let lType: string;
@@ -279,18 +278,9 @@ export class ExpressionResolver {
                         return this.concatString(lValue, lType, rValue, rType);
                     }
                 }
-                console.error('ERRO: resolução de expr binária entre objeto e algo')
+                console.error('Cannot resolve binary expression between object and something else');
             }
         }
-        // if (util.Operators.isArithmeticOperator(op)) {
-        //     // Verifica se não está tentando concatenar strings, por que é o único
-        //     // objeto que aceita operador aritimético
-        //     if (lhsValue instanceof ObjectValue || rhsValue instanceof ObjectValue) {
-        //
-        //     } else {
-        //
-        //     }
-        // }
     }
 
     private concatString(lValue: any, lType: string, rValue: any, rType: string) {
@@ -307,7 +297,7 @@ export class ExpressionResolver {
 }
 
 /**
- * Realiza a iteração começando pela classe pai.
+ * Iterate classes starting from root.
  */
 export class ClassRootIterator<T extends BaseClass> implements util.Iterator<T> {
     protected arr: Array<T> = [];
@@ -319,7 +309,7 @@ export class ClassRootIterator<T extends BaseClass> implements util.Iterator<T> 
             let classesToProcess = arr[i].getClassCompabilityArray();
             classesToProcess.reverse();
 
-            // Adiciona somente classes não repetidas
+            // Add only unique class
             for (let j = 0; j < classesToProcess.length; j++) {
                 let currentClass = <T>classesToProcess[j];
                 if (typeof this.processedClasses[currentClass.getTypeName()] == 'undefined') {
@@ -341,8 +331,9 @@ export class ClassRootIterator<T extends BaseClass> implements util.Iterator<T> 
 }
 
 export class Variable {
-    // Identificador que guarda quando esta variavel foi criada, desta forma é possível
-    // saber se ela foi declarada anteriormente ou posteriormente
+    /**
+     * Number that identifies the order of declaration of variables.
+     */
     order: number;
     name: string;
     type: Type;
@@ -353,7 +344,7 @@ export class Variable {
     ownerContext: BaseScope;
     variableDeclaration: Ast.VariableDeclaration = null;
 
-    // Contador para auxiliar a criação do id
+    // Counter to help order creation
     static counter: number = 0;
 
     constructor(name: string, type: Type) {
@@ -391,7 +382,7 @@ export abstract class BaseScope implements Scope {
         this.parentScope = parentScope;
         this.ownerClass = ownerClass;
 
-        // Guarda objeto ao qual se refere
+        // Store referring object
         if (this.parentScope instanceof BaseScope && this.parentScope.objectValue != null) {
             this.objectValue = this.parentScope.objectValue;
         } else if (this.parentScope instanceof ObjectValue) {
@@ -401,7 +392,7 @@ export abstract class BaseScope implements Scope {
 
     defineVariable(variable: Variable): void {
         if (typeof this.variables[variable.name] != 'undefined') {
-            throw new Parser.ParserException("Variável " + variable.name + " já foi definida");
+            throw new Parser.ParserException("Variable " + variable.name + " is already defined");
         } else {
             this.variables[variable.name] = variable;
             if (variable.isStatic == false) {
@@ -559,8 +550,8 @@ export abstract class BaseClass extends BaseScope implements Type {
     }
 
     /**
-     * Retorna classe no topo da cadeia de herança desta classe.
-     * OBS.: Este método só pode ser invocado após a invocação do método updateClassesDiscovered.
+     * Returns the root class.
+     * This method can only be called after updateClassesDiscovered.
      * @return {BaseClass}
      */
     getRootClass(): BaseClass {
@@ -609,7 +600,7 @@ export abstract class BaseClass extends BaseScope implements Type {
             }
 
             throw new Parser.CompileParserException(
-                "Método " + baseMethod.getMethodSignature() + " já está definido",
+                "Method " + baseMethod.getMethodSignature() + " is already defined",
                 range,
                 this.name
             );
@@ -654,12 +645,11 @@ export abstract class BaseClass extends BaseScope implements Type {
     }
 
     _getMethod(methods: Array<BaseMethod>, name: string, argsType: Array<Type>): BaseMethod {
-        // Verifica se existe algum método com este nome
         if (typeof methods == 'undefined' || methods.length == 0) {
             return null;
         }
 
-        // Verifica a compatibilidade dos argumentos com cada definição de função
+        // Finds method with matching arguments
         for (let i = 0; i < methods.length; i++) {
             if (methods[i].matchArguments(argsType)) {
                 return methods[i];
@@ -670,9 +660,7 @@ export abstract class BaseClass extends BaseScope implements Type {
     }
 
     /**
-     * Verifica se esta classe é um subtipo da classe informada.
-     * @param  {BaseClass} baseClass
-     * @return {boolean}
+     * Returns if this class is a subclass of the given type.
      */
     isCompatible(t: Type): boolean {
         return typeof this.classCompability[t.getTypeName()] != 'undefined';
@@ -682,9 +670,10 @@ export abstract class BaseClass extends BaseScope implements Type {
         return this.classCompabilityArray.slice();
     }
 
+    /**
+     * Update internal lists of compatible classes.
+     */
     updateClassesDiscovered(): void {
-        // Atualiza a lista de classes compatíveis com essa (que são pai)
-        // também atualizando o rootClass
         this.rootClass = this;
         this.classCompability[this.rootClass.name] = this.rootClass;
         this.classCompabilityArray.push(this.rootClass);
@@ -773,17 +762,15 @@ export abstract class BaseMethod {
     }
 
     /**
-     * Verifica se a lista de argumentos é a esperada pelo método.
-     * @param  {Array<Type>} args [description]
-     * @return {boolean}          [description]
+     * Checks if method matches the arguments.
      */
     matchArguments(args: Array<Type>): boolean {
-        // Verifica se a quantidade de argumentos são o mesmo
+        // Check number of arguments
         if (args.length != this.arguments.length) {
             return false;
         }
 
-        // Verifica se cada argumento é compatível
+        // Check arguments compatibility
         for (let i = 0; i < args.length; i++) {
             if (args[i].isCompatible(this.arguments[i].type) == false) {
                 return false;
@@ -909,7 +896,7 @@ export class Program implements Scope {
         return this.types[type];
     }
 
-    // TODO: substituir pela resolveType
+    // TODO: replace by resolveType
     resolveType2(type: string): Type {
         return this.types[type];
     }
@@ -927,7 +914,7 @@ export class Program implements Scope {
     }
 
     /**
-     * Atualiza classes uma vez que todas as classes já foram descobertas.
+     * Update classes once all classes have been discovered.
      */
     updateClassesDiscovered(): void {
         for (let name in this.classes) {
@@ -942,20 +929,18 @@ export class ObjectValue extends BaseScope implements Value {
     rootObjectValue: ObjectValue;
 
     /**
-     * Variável utilizada pelas classes nativas para controlar qualquer coisa
-     * relativo ao objeto.
-     * @type {any}
+     * Variable used by native classes to control anything related to an object.
      */
     public native: any;
 
     /**
-     * Escopo do objeto da classe pai
+     * Scope of the object for the superclass.
      * @type {ObjectValue}
      */
-    fatherScope: ObjectValue;
+    superScope: ObjectValue;
 
     /**
-     * Escopo do objeto da classe filha
+     * Scope of the object for the child class.
      * @type {ObjectValue}
      */
     childScope: ObjectValue;
@@ -979,7 +964,7 @@ export class ObjectValue extends BaseScope implements Value {
 
         this.rootObjectValue.mapObjScope[baseClass.getTypeName()] = this;
 
-        // Declara todas variáveis deste escopo
+        // Declare all variables inside this scope
         let variables = baseClass.getNonStaticVariables();
         for (var name in variables) {
             this.defineVariable(variables[name].cloneDeclaration());
@@ -987,7 +972,7 @@ export class ObjectValue extends BaseScope implements Value {
 
         let extendedClass = baseClass.getExtendedClass();
         if (extendedClass != null) {
-            this.fatherScope = new ObjectValue(extendedClass, this);
+            this.superScope = new ObjectValue(extendedClass, this);
         }
     }
 
@@ -1006,15 +991,15 @@ export class ObjectValue extends BaseScope implements Value {
             variable = this.myClass.resolveVariableSafeNonRecursive(name);
         }
 
-        if (variable == null && this.fatherScope != null) {
-            variable = this.fatherScope.resolveVariableSafeNonRecursive(name);
+        if (variable == null && this.superScope != null) {
+            variable = this.superScope.resolveVariableSafeNonRecursive(name);
         }
 
         return variable;
     }
 
     getMethodSafe(name: string, argsType: Array<Type>): BaseMethod {
-        // Primeiro procura por um método estático no mesmo contexto do objeto
+        // Try to find an static method in the same context of the object
         let method = super.getMethodSafe(name, argsType);
         if (method != null && method.isStatic()) {
             return method;

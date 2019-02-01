@@ -57,10 +57,10 @@ export class CompileParserException extends ParserException implements util.IExc
     }
 
     getFormatedMessage(): string {
-        let message = this.message + " no arquivo " + this.file
+        let message = this.message + " in file " + this.file
         if (this.sourceRange != null) {
-            message += " linha " + this.sourceRange.startLine
-                + " coluna " + this.sourceRange.startColumn;
+            message += " line " + this.sourceRange.startLine
+                + " column " + this.sourceRange.startColumn;
         }
         return message;
     }
@@ -155,16 +155,15 @@ class VerifyMethodsListener extends Listener.BaseListener {
             null,
             this.currentScope);
 
-        // Para ser um statement válido ele precisa ser uma atribuicão ou chamada de método
         if (node instanceof Ast.BinaryExpr) {
             if (!util.Operators.isAssignmentOperator(node.operator)) {
-                this.parser.addParserErrorNode("Operador " + node.operator + " não permitido aqui", node);
+                this.parser.addParserErrorNode(node.operator + " operator is not allowed here", node);
             }
         } else if (node instanceof Ast.MethodOrVariable) {
             let methodOrVar = node.getMethodOrVariable();
             if (methodOrVar == null) {
                 this.parser.addParserErrorNode(
-                    "Deve ser uma chamada de método",
+                    "It must be a method call",
                     node
                 );
                 return;
@@ -175,20 +174,20 @@ class VerifyMethodsListener extends Listener.BaseListener {
 
             if (methodOrVar instanceof Ast.MethodCall == false) {
                 this.parser.addParserErrorNode(
-                    "Deve ser uma chamada de método",
+                    "It must be a method call",
                     node
                 );
             }
         } else if (node instanceof Ast.UnaryExpr) {
             if (node.operator != '++' && node.operator != '--') {
                 this.parser.addParserErrorNode(
-                    "Isto não é um comando",
+                    "This is not a command",
                     node
                 );
             }
         } else {
             this.parser.addParserErrorNode(
-                "Isto não é um comando",
+                "This is not a command",
                 node
             );
         }
@@ -198,7 +197,7 @@ class VerifyMethodsListener extends Listener.BaseListener {
         let type = this.resolveExpressionType(node.getCondition());
         if (type != null && type.getTypeName() != 'boolean') {
             this.parser.addParserErrorNode(
-                "A condição deve resultar em uma boleana ",
+                "Incompatible types. Require boolean, found " + type.getTypeName(),
                 node.getCondition()
             );
         }
@@ -208,7 +207,7 @@ class VerifyMethodsListener extends Listener.BaseListener {
         if (this.currentMethod.isConstructor) {
             if (node.getExpression() != null) {
                 this.parser.addParserErrorNode(
-                    "O construtor não pode retornar nenhum valor",
+                    "Constructors cannot return any value",
                     node
                 );
             }
@@ -222,7 +221,7 @@ class VerifyMethodsListener extends Listener.BaseListener {
 
             if (type != null && type.isCompatible(this.currentMethod.getReturnType()) == false) {
                 this.parser.addParserErrorNode(
-                    "O tipo de retorno é incompatível com " + this.currentMethod.getReturnType().getTypeName(),
+                    "Return type is not compatible with " + this.currentMethod.getReturnType().getTypeName(),
                     node
                 );
             }
@@ -249,7 +248,7 @@ class VerifyMethodsListener extends Listener.BaseListener {
             let type = this.resolveExpressionType(node.getExpression());
             if (type != null && type.getTypeName() != 'boolean') {
                 this.parser.addParserErrorNode(
-                    "A condição deve resultar em uma boleana ",
+                    "Incompatible types. Require boolean, found " + type.getTypeName(),
                     node.getExpression()
                 );
             }
@@ -270,7 +269,7 @@ class VerifyMethodsListener extends Listener.BaseListener {
             let type = this.resolveExpressionType(node.getExpression());
             if (type != null && type.getTypeName() != 'boolean') {
                 this.parser.addParserErrorNode(
-                    "A condição deve resultar em uma boleana ",
+                    "Incompatible types. Require boolean, found " + type.getTypeName(),
                     node.getExpression()
                 );
             }
@@ -284,14 +283,14 @@ class VerifyMethodsListener extends Listener.BaseListener {
     enterSuperCall(node: Ast.SuperCall): void {
         if (this.currentMethod.isConstructor == false) {
             this.parser.addParserError(
-                "Não é possível chamar o construtor super em uma função que não é construtora",
+                "It is not possible to call super in a non constructor method",
                 node.fileName,
                 node.sourceRange
             );
         } else {
             if (this.statementIdx != 1) {
                 this.parser.addParserError(
-                    "O construtor super deve ser chamado como primeiro parâmetro",
+                    "Call to super must be the first statement",
                     node.fileName,
                     node.sourceRange
                 );
@@ -311,7 +310,7 @@ class VerifyMethodsListener extends Listener.BaseListener {
             && (this.currentMethod.getReturnType() != null)
             && (this.currentMethod.getReturnType().getTypeName() != 'void')) {
             this.parser.addParserErrorNode(
-                "O último comando deste método deve ser return",
+                "The last statement of this method must be a return",
                 node
             );
         }
@@ -323,7 +322,7 @@ class VerifyMethodsListener extends Listener.BaseListener {
             && (this.currentMethod.getReturnType().getTypeName() != 'void')) {
             if (this.currentMethod instanceof Runtime.UserMethod) {
                 this.parser.addParserErrorNode(
-                    "O último comando deste método deve ser return",
+                    "The last statement of this method must be a return",
                     this.currentMethod.getMethodDeclaration()
                 );
             }
@@ -333,7 +332,7 @@ class VerifyMethodsListener extends Listener.BaseListener {
     verifyTypeCompability(variable: Runtime.Variable, type: Runtime.Type, node: Ast.BaseNode): void {
         if (type != null && type.isCompatible(variable.type) == false) {
             this.parser.addParserError(
-                "Tipo " + type.getTypeName() + " não é compatível com " + variable.type.getTypeName(),
+                "Type " + type.getTypeName() + " is not compatible with " + variable.type.getTypeName(),
                 node.fileName,
                 node.sourceRange
             );
@@ -342,13 +341,13 @@ class VerifyMethodsListener extends Listener.BaseListener {
 
     defineVariable(range: util.ISourceRange, variable: Runtime.Variable, scope: Runtime.BaseScope = this.currentScope): void {
         try {
-            // Antes de setar variável, verificar se não existe já uma no escopo do método
+            // Before declaring variable, verifies if it is not already created in the scope
             let declaredVariable = this.currentScope.resolveVariableSafe(variable.name, this.methodScope);
             if (declaredVariable == null) {
                 scope.defineVariable(variable);
             } else {
                 this.parser.addParserError(
-                    'A variável ' + variable.name + ' já está definida no método',
+                    'The variable ' + variable.name + ' is already defined in method',
                     this.userClass.getClassDeclaration().fileName,
                     range
                 );
@@ -384,7 +383,7 @@ class VerifyMethodsListener extends Listener.BaseListener {
 }
 
 /**
- * Classe responsável por criar a estrutura árvore do código.
+ * Class responsible for building the AST.
  */
 export class TreeConstructorVisitor extends BasicJavaVisitor {
     fileName: string;
@@ -417,7 +416,7 @@ export class TreeConstructorVisitor extends BasicJavaVisitor {
 
         let declarations: Array<any> = ctx.classBody().classBodyDeclaration();
 
-        // Cria métodos e propriedades da classe
+        // Creates methods and properties of the class
         for (let i = 0; i < declarations.length; i++) {
             let member = this.visitClassBodyDeclaration(declarations[i]);
             node.addMember(member);
@@ -464,26 +463,26 @@ export class TreeConstructorVisitor extends BasicJavaVisitor {
 
         node.name = ctx.methodDeclaration().Identifier().getText();
 
-        // Verifica se método é estático
+        // Verifies if it is a static method
         if (ctx.ClassMemberModifier() != null) {
             node.isStatic = true;
         }
 
-        // Trata tipo de retorno do método
+        // Handle return type
         if (ctx.methodDeclaration().type() != null) {
             node.type = this.resolveType(ctx.methodDeclaration().type());
         } else if (ctx.methodDeclaration().voidT() != null) {
             node.type = 'void';
         }
 
-        // Trata tipo de acesso do método
+        // Handle method access modifier
         if (ctx.ClassMemberAccessModifier() != null) {
             node.accessModifier = util.stringToAccessModifier(ctx.ClassMemberAccessModifier().getText());
         } else {
             node.accessModifier = util.AccessModifier.Public;
         }
 
-        // Trata parâmetros
+        // Handle parameters
         if (ctx.methodDeclaration().formalParameters().formalParameterList() != null) {
             let parameters = ctx.methodDeclaration().formalParameters()
                 .formalParameterList()
@@ -541,7 +540,7 @@ export class TreeConstructorVisitor extends BasicJavaVisitor {
             let node = new Ast.BasicDebug(ctx, this.fileName);
             return node;
         } else {
-            console.error('AST: statement não reconhecido', ctx);
+            console.error('AST: statement not found', ctx);
             return null;
         }
     }
@@ -606,10 +605,6 @@ export class TreeConstructorVisitor extends BasicJavaVisitor {
         return node;
     }
 
-    // ----------------------------------------------------
-    // -- INICIO DOS STATEMENTS
-    // ----------------------------------------------------
-
     visitSystemOutPrint(ctx: any): Ast.Statement {
         let node = new Ast.Sysout(ctx, this.fileName);
         if (ctx.getChild(0).getText() == 'System.out.print(') {
@@ -634,10 +629,6 @@ export class TreeConstructorVisitor extends BasicJavaVisitor {
 
         return node;
     }
-
-    // ----------------------------------------------------
-    // -- FIM DOS STATEMENTS
-    // ----------------------------------------------------
 
     visitArguments(ctx: any): Array<Ast.ExprNode> {
         let args = [];
@@ -674,11 +665,12 @@ export class TreeConstructorVisitor extends BasicJavaVisitor {
             return null;
         }
 
-        if (ctx.arguments() != null) { // é a chamada de um método
+        if (ctx.arguments() != null) { // Checks if it is a method call
             let node = new Ast.MethodCall(ctx, this.fileName);
             node.name = ctx.Identifier().getText();
             node.setArgs(this.visitArguments(ctx.arguments()));
-            // Verificar recursivamente se existem mais acessos
+
+            // Checks if it calls other methods or variables
             if (ctx.methodOrVariableSuffix() != null) {
                 let methodOrVar = this.visitMethodOrVariableSuffix(ctx.methodOrVariableSuffix());
                 if (methodOrVar != null) {
@@ -688,11 +680,11 @@ export class TreeConstructorVisitor extends BasicJavaVisitor {
             return node;
         }
 
-        // chamada de uma variável
+        // It is a variable
         let node = new Ast.Variable(ctx, this.fileName);
         node.name = ctx.Identifier().getText();
 
-        // Verificar recursivamente se existem mais acessos
+        // Checks if it calls other methods or variables
         if (ctx.methodOrVariableSuffix() != null) {
             let methodOrVar = this.visitMethodOrVariableSuffix(ctx.methodOrVariableSuffix());
             if (methodOrVar != null) {
@@ -722,7 +714,7 @@ export class TreeConstructorVisitor extends BasicJavaVisitor {
                 node.value = null;
                 node.type = 'null';
             } else {
-                throw new util.NotImplementedException("Tipo primitivo não implementado");
+                throw new util.NotImplementedException("Primitive type not implemented");
             }
             return node;
         } else if (ctx.creator() != null) {
@@ -762,9 +754,8 @@ export class TreeConstructorVisitor extends BasicJavaVisitor {
                 return operation;
             }
         }
-        // TODO:0 Implementar os outros tipos de expressão
 
-        console.error(ctx, "exp não implementada");
+        console.error(ctx, "Expression not implemented");
         return null;
     }
 
@@ -779,14 +770,14 @@ export class TreeConstructorVisitor extends BasicJavaVisitor {
 }
 
 /**
- * Clase que faz o parse dos arquivos e análise semântica.
+ * Makes parse of files and semantic analysis.
  */
 export class BasicJavaParser {
     private program: Runtime.Program;
     private errors: Array<ParserError> = [];
 
     parse(codes: { [id: string]: string }): Runtime.Program {
-        let classesDeclaration: Array<Ast.ClassDeclaration> = []; // Array com todas as classes
+        let classesDeclaration: Array<Ast.ClassDeclaration> = []; // Array with all classes
 
         for (let code in codes) {
             classesDeclaration.push(this.generateAst(code, codes[code]));
@@ -806,7 +797,7 @@ export class BasicJavaParser {
             classes.push(nativeClasses[className]);
         }
 
-        // Identifica todas as classes
+        // Identify all classes
         for (let i = 0; i < classesDeclaration.length; i++) {
             let userClass = new Runtime.UserClass(this.program, classesDeclaration[i]);
             if (this.program.defineType(userClass) == false) {
@@ -817,27 +808,26 @@ export class BasicJavaParser {
             }
         }
 
-        // Seta superclasse e define métodos
+        // Set superclass and define methods
         for (let i = 0; i < classes.length; i++) {
             if (classes[i] instanceof Runtime.UserClass) {
                 let userClass = classes[i] as Runtime.UserClass;
 
                 userClass.getClassDeclaration().parseScope = userClass;
 
-                // Seta super classe, já que na primeira etapa nem
-                // todas as classes eram conhecidas.
+                // Set superclass since not all classes were known in the first process
                 this.setSuperClass(userClass);
 
-                // Definir os métodos das classe.
-                // É importante ainda não identificar as variáveis por que elas devem
-                // ser criadas na ordem do pai para o filho (ordem correta de execução)
+                // Define methods from classes.
+                // It is important not to identify variables yet because they need to be
+                // created in super -> child order (correct execution order)
                 this.defineMethods(userClass);
             } else {
                 this.setSuperClass(classes[i]);
             }
         }
 
-        // Verifica estenção cíclica
+        // Verifies cyclic inheritance
         for (let i = 0; i < classes.length; i++) {
             let baseClass = classes[i];
 
@@ -845,9 +835,9 @@ export class BasicJavaParser {
                 let baseClassTemp: Runtime.BaseClass = baseClass;
                 while (baseClassTemp != null) {
                     baseClassTemp = baseClassTemp.getExtendedClass();
-                    // Se chegou na mesma classe de partida é uma estenção ciclica
+                    // If it ended up in the same class it started, we've got a cyclic inheritance
                     if (baseClassTemp != null && baseClassTemp.getTypeName() == baseClass.getTypeName()) {
-                        this.addParserErrorNode("Estenção ciclica", baseClass.getClassDeclaration());
+                        this.addParserErrorNode("Cyclic inheritance", baseClass.getClassDeclaration());
                         baseClass.setExtendedClass(null);
                         break;
                     }
@@ -857,7 +847,7 @@ export class BasicJavaParser {
 
         this.program.updateClassesDiscovered();
 
-        // Verifica a sobrescrita dos métodos e define as variáveis da classe/objeto
+        // Verifies methods override and define variables of class/object
         {
             let it = new Runtime.ClassRootIterator(classes);
 
@@ -866,7 +856,7 @@ export class BasicJavaParser {
 
                 let isRootClass = classProcessing.getExtendedClass() == null;
 
-                // Classes nativas não precisam ser verificadas
+                // Jct classes don't need to be checked
                 if (classProcessing instanceof Runtime.UserClass) {
                     this.verifyOverriddenMethods(classProcessing, isRootClass);
                     this.defineVariables(classProcessing);
@@ -876,7 +866,7 @@ export class BasicJavaParser {
             }
         }
 
-        // Verifica se os construtores são válidos
+        // Verifies if constructors are valid
         {
             let it = new Runtime.ClassRootIterator(classes);
 
@@ -889,7 +879,7 @@ export class BasicJavaParser {
             }
         }
 
-        // Verifica se as variáveis da classe estão corretamente declaradas
+        // Verifies if class variables are declared correctly
         for (let i = 0; i < classes.length; i++) {
             let baseClass = classes[i];
 
@@ -910,7 +900,7 @@ export class BasicJavaParser {
         let type = this.program.resolveType2(typeName);
         if (typeof type == 'undefined') {
             this.addParserErrorNode(
-                "O tipo " + typeName + " não foi definido",
+                "The type " + typeName + " is not defined",
                 node
             );
             type = null;
@@ -920,13 +910,13 @@ export class BasicJavaParser {
     }
 
     private verifyVariables(classProcessing: Runtime.UserClass): void {
-        // Testando atributos da classe ou objeto
+        // Testing object/class attributes
         let variables = classProcessing.getVariables();
 
         for (let nomeVar in variables) {
             let variable = variables[nomeVar];
 
-            // Só precisa verificar se existe uma atribuição
+            // Just need to check if there is an assignment
             if (variable.initializerNode != null) {
                 let whoIsTrying = {
                     "baseClass": classProcessing,
@@ -939,8 +929,8 @@ export class BasicJavaParser {
                 if (type != null) {
                     if (type.isCompatible(variable.type) == false) {
                         this.addParserErrorNode(
-                            "Tipo " + type.getTypeName() +
-                            " não é compatível com " + variable.type.getTypeName(),
+                            "Type " + type.getTypeName() +
+                            " is not compatible with " + variable.type.getTypeName(),
                             variable.variableDeclaration != null ? variable.variableDeclaration : classProcessing.getClassDeclaration()
                         );
                     }
@@ -950,12 +940,10 @@ export class BasicJavaParser {
     }
 
     /**
-     * Verifica se os métodos que foram sobrescritos são válidos.
-     * @param {Runtime.UserClass} classProcessing
-     * @param {boolean}           isRootClass
+     * Verifies if the override methods are valid.
      */
     private verifyOverriddenMethods(classProcessing: Runtime.UserClass, isRootClass: boolean): void {
-        // Classes root não tem o que sobrescrever
+        // Root classes doen't have what to override
         if (isRootClass) {
             return;
         }
@@ -966,7 +954,7 @@ export class BasicJavaParser {
             let baseMethodExtended: Runtime.BaseMethod = null;
             let classTemp: Runtime.BaseClass = classProcessing;
 
-            // Procura recursivamente pelo método mais próximo com a mesma assinatura
+            // Searches recursively for the closest method with the same signature
             while (classTemp.getExtendedClass() != null) {
                 baseMethodExtended = classTemp.getExtendedClass()
                     .getMethodBySignature(methods[i].getMethodSignature());
@@ -976,22 +964,21 @@ export class BasicJavaParser {
                 classTemp = classTemp.getExtendedClass();
             }
 
-            // Se achou o método sobrescrito
+            // If it found the override method
             if (baseMethodExtended instanceof Runtime.BaseMethod) {
-                // Verificação quanto ao nível de acesso
                 if (baseMethodExtended.getAccessModifier() < methods[i].getAccessModifier()) {
                     this.addParserErrorNode(
-                        "Método " + methods[i].getMethodSignature() + " não pode ter um modificador de acesso mais restrito"
-                        + " que o já definido por uma super classe",
+                        "Method " + methods[i].getMethodSignature() + " cannot have an access modifier more restrict"
+                        + " of one defined in a superclass",
                         classProcessing.getClassDeclaration()
                     );
                 }
 
-                // Verificação quanto ao atributo estático
+                // Verifies static attribute
                 if (baseMethodExtended.isStatic() != methods[i].isStatic()) {
                     this.addParserErrorNode(
-                        "Método " + methods[i].getMethodSignature() + " não pode sobrescrever"
-                        + " um método " + (baseMethodExtended.isStatic() ? 'estático' : 'não estático'),
+                        "Method " + methods[i].getMethodSignature() + " cannot override"
+                        + " a " + ((baseMethodExtended.isStatic() ? 'static' : 'non static') + "method"),
                         classProcessing.getClassDeclaration()
                     );
                 }
@@ -1003,8 +990,6 @@ export class BasicJavaParser {
     private verifyMethods(classProcessing: Runtime.UserClass): void {
         let methods = classProcessing.getMethods();
 
-        // TODO: utilizar um listener começando pelo método (incluindo) até o fim dele
-        // desta forma verificar escopo (verificar todas as expressões)
         let listener = new VerifyMethodsListener(this, classProcessing);
         listener.walk();
     }
@@ -1012,7 +997,7 @@ export class BasicJavaParser {
     private verifyConstructors(classProcessing: Runtime.UserClass): void {
         let constructors = classProcessing.getConstructors();
 
-        // Se não possúi construtores, deve ter um padrão
+        // Use a default constructor when there is no constructor defined
         if (constructors.length == 0) {
             let methodDec = new Ast.MethodDeclaration(classProcessing.getClassDeclaration().ctx, classProcessing.getClassDeclaration().fileName);
             methodDec.name = classProcessing.getTypeName();
@@ -1028,44 +1013,39 @@ export class BasicJavaParser {
             classProcessing.addConstructor(userMethod);
         }
 
-        // Verifica se construtores chamam super() válido
+        // Verifies if constructors call a valid super()
         if (classProcessing.getExtendedClass() != null) {
             for (let j = 0; j < constructors.length; j++) {
                 let constructor = constructors[j];
 
-                // Só é necessário validar em métodos escritos pelo usuário
+                // It is only necessary to verify methods defined by user
                 if (constructor instanceof Runtime.UserMethod) {
                     let statement = constructor.getMethodDeclaration().getBlockStatement().getStatements()[0];
 
-                    // Caso o primeiro statement não for um super(),
-                    // garante que o primeiro statement será chamada super()
+                    // In case the first statement is not a super() call, create a supercall node
                     if ((statement instanceof Ast.SuperCall) == false) {
+                        // There is no problem if the superclass has a default constructor
                         if (classProcessing.getExtendedClass().hasConstructor([])) {
-                            // Se existe construtor padrão na classe pai, sem problemas
                             constructor.getMethodDeclaration().getBlockStatement().addStatementTop(
                                 new Ast.SuperCall(constructor.getMethodDeclaration().ctx, constructor.getMethodDeclaration().fileName)
                             );
                         } else {
-                            // Não existe construtor padrão, então o usuário deve informar
-                            // os parâmetros corretos
+                            // If there is not a default constructor, user must to inform valid parameters
                             this.addParserError(
-                                "O construtor da classe pai deve ser chamado pois não existe construtor padrão",
+                                "The constructor of superclass must be called explicitly because there is no default constructor",
                                 classProcessing.getTypeName(),
                                 constructor.getMethodDeclaration().sourceRange
                             );
-                            continue; // Vai para próximo construtor
+                            continue; // Go to next constructor
                         }
                     }
 
-                    // Agora este statement é um Ast.SuperCall e será
-                    // verificado se a lista de argumentos é válida
+                    // Now this statement is a Ast.SuperCall and it will be validated
                     statement = constructor.getMethodDeclaration().getBlockStatement().getStatements()[0];
-                    if (statement instanceof Ast.SuperCall) { // Checagem devido ao typescript
-                        // Está sendo utilizado escopo pai como o da classe por que variáveis do objeto não podem
-                        // ser usadas
+                    if (statement instanceof Ast.SuperCall) { // Typescript check
                         let localScope = new Runtime.LocalScope(classProcessing, classProcessing, false);
 
-                        // Define parâmetros no escopo
+                        // Define arguments
                         let constructorArgs = constructor.getArguments();
                         constructorArgs.forEach(function (v) {
                             let variable = new Runtime.Variable(v.name, v.type);
@@ -1083,7 +1063,7 @@ export class BasicJavaParser {
 
                             if (calledConstructor == null) {
                                 this.addParserErrorNode(
-                                    "Não existe construtor "
+                                    "There is no constructor "
                                     + Runtime.generateMethodSignature(
                                     classProcessing.getExtendedClass().getTypeName(),
                                     args),
@@ -1095,7 +1075,7 @@ export class BasicJavaParser {
                             // Verifica acesso
                             if (calledConstructor.getAccessModifier() == util.AccessModifier.Private) {
                                 this.addParserErrorNode(
-                                    "O construtor " + calledConstructor.getMethodSignature() + " é privado",
+                                    "Constructor " + calledConstructor.getMethodSignature() + " is private",
                                     statement
                                 );
                                 continue;
@@ -1105,7 +1085,7 @@ export class BasicJavaParser {
                 }
             }
         } else {
-            // Se for classe root não pode super()
+            // If it is a root class, no need to call super()
             for (let j = 0; j < constructors.length; j++) {
                 let constructor = constructors[j];
 
@@ -1116,7 +1096,7 @@ export class BasicJavaParser {
                     let statement = constructor.getMethodDeclaration().getBlockStatement().getStatements()[0];
                     if (typeof statement != 'undefined' && statement instanceof Ast.SuperCall) {
                         this.addParserError(
-                            "Não existe classe pai para ser invocada",
+                            "There is no superclass to be invoked",
                             classProcessing.getTypeName(),
                             constructor.getMethodDeclaration().sourceRange
                         );
@@ -1160,17 +1140,17 @@ export class BasicJavaParser {
 
                 if (classConstructor == null) {
                     this.addParserErrorNode(
-                        "Não existe um construtor " + Runtime.generateMethodSignature(baseClass.getTypeName(), argsType),
+                        "There is no contructor " + Runtime.generateMethodSignature(baseClass.getTypeName(), argsType),
                         node
                     );
                     return null;
                 }
 
-                // Verifica modificador de acesso
+                // Verifies access modifier
                 if (classConstructor.getAccessModifier() == util.AccessModifier.Private
                     && classConstructor.getOwnerClass() != whoIsTrying.baseClass) {
-                    this.addParserErrorNode("Construtor " + classConstructor.getMethodSignature()
-                        + " é privado", node);
+                    this.addParserErrorNode("Constructor " + classConstructor.getMethodSignature()
+                        + " is private", node);
                     return null;
                 }
             }
@@ -1190,12 +1170,11 @@ export class BasicJavaParser {
             if (node.thisOrSuper != null) {
                 if (scope.staticContext) {
                     this.addParserErrorNode(
-                        "A variável " + node.thisOrSuper + " não pode ser acessada em um contexto estático "
+                        "Variable " + node.thisOrSuper + " cannot be accessed in a static context"
                         , node);
                     return null;
                 }
 
-                // Verifica se foi utilizado o this já que somente super é inválidado pelo parser
                 if (node.getMethodOrVariable() == null) {
                     return scope.ownerClass;
                 }
@@ -1229,7 +1208,7 @@ export class BasicJavaParser {
 
             if (leftType != null && rightType != null && type == null) {
                 this.addParserErrorNode(
-                    "Tipos (" + leftType.getTypeName() + ", " + rightType.getTypeName() + ") e " + (isVariable ? 'variável' : 'não variável') + " inválidos para o operador " + node.operator
+                    "Types (" + leftType.getTypeName() + ", " + rightType.getTypeName() + ") and " + (isVariable ? 'variable' : 'non-variable') + " invalid for the " + node.operator + " operator"
                     , node);
                 return null;
             }
@@ -1253,14 +1232,14 @@ export class BasicJavaParser {
 
             if (elemType != null && type == null) {
                 this.addParserErrorNode(
-                    "Tipo (" + elemType.getTypeName() + ") e " + (isVariable ? 'variável' : 'não variável') + " inválido para o operador " + node.operator
+                    "Type (" + elemType.getTypeName() + ") and " + (isVariable ? 'variable' : 'non-variable') + " invalid for " + node.operator + " operator"
                     , node);
                 return null;
             }
 
             return type;
         }
-        console.error('Não foi possível determinar o tipo desta expressão ', node);
+        console.error('It was not possible to determine the expression type', node);
     }
 
     resolveMethodOrPropriety(whoIsTrying: WhoIsTrying, methodOrVariable: Ast.MethodOrVariableAccessor, scopeResolver: Runtime.ScopeResolver, scope: Runtime.BaseScope): Runtime.Type {
@@ -1273,51 +1252,51 @@ export class BasicJavaParser {
 
             variable = scope.resolveVariableSafe(methodOrVariable.name);
 
-            // Se não achou o identificador, verificar se não é o nome de uma classe
+            // If it didn't find the identifier, verifies if it is a class name
             if (variable == null) {
                 if (scopeResolver.depth == 1) {
                     let baseClass = this.program.resolveClass(methodOrVariable.name);
                     if (baseClass != null) {
-                        // Seta tipo do método ou variável
+                        // Now we know it is a baseClass type
                         methodOrVariable.parserType = baseClass;
-                        // Bom, achou a classe, agora procurar nela...
+                        // Find the runtime type
                         return this.resolveMethodOrPropriety(whoIsTrying, methodOrVariable.getMethodOrVariable(), scopeResolver, baseClass);
                     }
                 }
 
                 this.addParserErrorNode(
-                    "Variável " + methodOrVariable.name + " não está definida",
+                    "Variable " + methodOrVariable.name + " is not defined",
                     methodOrVariable
                 );
                 return null;
             }
 
-            // Verifica referencias para variáveis não estáticas em contexto estático
+            // Verifies references for non static variables in static context
             if (scope.staticContext && variable.isStatic == false) {
                 this.addParserErrorNode(
-                    'Tentando referenciar a variável ' + variable.name + ' que não é estática',
+                    'Trying to reference variable ' + variable.name + ' that is not static',
                     methodOrVariable
                 );
                 return null;
             }
 
-            // Verifica modificador de acesso
+            // Verifies access modifier
             if (variable.accessModifier == util.AccessModifier.Private
                 && variable.ownerContext.ownerClass != whoIsTrying.baseClass) {
                 this.addParserErrorNode(
-                    'A propriedade ' + variable.name + ' é privada na classe ' + variable.ownerContext.ownerClass.getTypeName(),
+                    'The property ' + variable.name + ' is private in class ' + variable.ownerContext.ownerClass.getTypeName(),
                     methodOrVariable
                 );
                 return null;
             }
 
-            // Se foi uma variável que pediu a resolução, ela deve ter sido declarada anteriormente
+            // If it is a variable it must have been previously declared
             if (scopeResolver.depth == 1) {
                 if (typeof whoIsTrying.variable != 'undefined' && whoIsTrying.variable != null) {
                     if (whoIsTrying.variable.order <= variable.order) {
                         this.addParserErrorNode(
-                            "A variável " + methodOrVariable.name + " não pode ser usada aqui pois foi"
-                            + " declarada posteriormente",
+                            "The variable " + methodOrVariable.name + " cannot be used in here"
+                            + " because it was declared after",
                             methodOrVariable
                         );
                         return null;
@@ -1325,14 +1304,14 @@ export class BasicJavaParser {
                 }
             }
 
-            // Aqui foi resolvido
+            // Resolved
             type = variable.type;
         } else if (methodOrVariable instanceof Ast.MethodCall) {
-            // Primeiro deve ser verificado qual a assinatura do método que será chamado.
-            // Para saber os tipos dos métodos, o escopo original deve ser levado em conta
+            // First of all it must be verified what is the method signature.
+            // To known the method types the original scope have to be considered.
             let args = this.resolveListExpressionType(whoIsTrying, methodOrVariable.getArgs(), scopeResolver, scopeResolver.originalScope);
 
-            // Se não conseguiu descobrir algum dos elementos da lista, nem adianta tentar achar o método
+            // Could not identify the type of one of the elements
             if (args == null) {
                 return null;
             }
@@ -1341,7 +1320,7 @@ export class BasicJavaParser {
 
             if (method == null) {
                 this.addParserErrorNode(
-                    "Nenhum método encontrado com a assinatura "
+                    "No method found with this signature "
                     + Runtime.generateMethodSignature(methodOrVariable.name, args),
                     methodOrVariable
                 );
@@ -1350,23 +1329,23 @@ export class BasicJavaParser {
 
             if (scope.staticContext == true && method.isStatic() == false) {
                 this.addParserErrorNode(
-                    "O método " + method.getMethodSignature() + " não é estático",
+                    "The method " + method.getMethodSignature() + " is not static",
                     methodOrVariable
                 );
                 return null;
             }
 
-            // Verifica modificador de acesso
+            // Verifies access modifier
             if (method.getAccessModifier() == util.AccessModifier.Private
                 && method.getOwnerClass() != whoIsTrying.baseClass) {
                 this.addParserErrorNode(
-                    'O método ' + method.getMethodName() + ' é privada na classe ' + method.getOwnerClass().getTypeName(),
+                    'The method ' + method.getMethodName() + ' is private in class ' + method.getOwnerClass().getTypeName(),
                     methodOrVariable
                 );
                 return null;
             }
 
-            // Aqui foi resolvido
+            // Resolved
             type = method.getReturnType();
         }
 
@@ -1374,23 +1353,23 @@ export class BasicJavaParser {
             return null;
         }
 
-        // Seta tipo do método ou variável
+        // Set method/variable type
         methodOrVariable.parserType = type;
 
-        // Não tem mais nenhuma expressão? O tipo é esse...
+        // If there is no more calls the type is already resolved
         if (methodOrVariable.getMethodOrVariable() == null) {
             return type;
         }
 
-        // Quer dizer que tem outra expressão após esta
+        // There is another call after this one, resolve it
         if (type instanceof Runtime.BaseClass) {
             scope = type.tempObjectScope;
             return this.resolveMethodOrPropriety(whoIsTrying, methodOrVariable.getMethodOrVariable(), scopeResolver, scope);
         }
 
-        // Se chegou até aqui é um tipo primitivo
+        // It is a primitive type
         this.addParserErrorNode(
-            "O tipo " + type.getTypeName() + " não é uma classe e não possúi propriedades ou métodos",
+            "The type " + type.getTypeName() + " is a primitive type and has no methods/variables",
             methodOrVariable
         );
         return null;
@@ -1430,8 +1409,7 @@ export class BasicJavaParser {
     }
 
     /**
-     * Setar a classe pai da classe.
-     * @param {Runtime.UserClass} userClass
+     * Set superclass of classes.
      */
     setSuperClass(baseClass: Runtime.BaseClass): void {
         if (baseClass instanceof Runtime.UserClass) {
@@ -1453,9 +1431,7 @@ export class BasicJavaParser {
     }
 
     /**
-     * Cria métodos na classe passada.
-     * @param {Runtime.Program}   program
-     * @param {Runtime.UserClass} userClass
+     * Create methods of classes.
      */
     defineMethods(userClass: Runtime.UserClass): void {
         let classDeclaration = userClass.getClassDeclaration();
@@ -1469,7 +1445,7 @@ export class BasicJavaParser {
     }
 
     defineMethod(userClass: Runtime.UserClass, methodDeclaration: Ast.MethodDeclaration) {
-        // Verifica argumentos
+        // Verifies arguments
         let methodArguments: Array<Runtime.ArgumentDeclaration> = [];
         let methodArgs = methodDeclaration.getArguments();
         for (let x = 0; x < methodArgs.length; x++) {
@@ -1484,7 +1460,7 @@ export class BasicJavaParser {
             }
         }
 
-        // Verifica tipo de retorno
+        // Verifies return type
         let returnType = this.resolveType(methodDeclaration.type);
 
         let userMethod = new Runtime.UserMethod(methodDeclaration, methodArguments, returnType);
@@ -1509,8 +1485,8 @@ export class BasicJavaParser {
 
         if (typeof returnType == 'undefined' && isConstructor == false) {
             this.addParserError(
-                "O tipo de retorno " + (typeof methodDeclaration.type != 'undefined' ? methodDeclaration.type + ' ' : '') +
-                "do método " + methodDeclaration.name + " não foi definido",
+                "The return type " + (typeof methodDeclaration.type != 'undefined' ? methodDeclaration.type + ' ' : '') +
+                " of method " + methodDeclaration.name + " is not defined",
                 userClass.getClassDeclaration().fileName,
                 methodDeclaration.sourceRange
             );
@@ -1518,8 +1494,7 @@ export class BasicJavaParser {
     }
 
     /**
-     * Define as variáveis da classe e objeto.
-     * @param {Runtime.UserClass} userClass
+     * Define the variables of class and object.
      */
     defineVariables(userClass: Runtime.UserClass): void {
         let classDeclaration = userClass.getClassDeclaration();

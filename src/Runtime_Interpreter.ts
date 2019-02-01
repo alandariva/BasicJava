@@ -67,7 +67,7 @@ class Interpreter {
             throw new RuntimeException("O método " + baseMethod.getMethodName() + " não é estático");
         }
 
-        // Inicia todas estáticas do programa
+        // Initiate all statics of the program
         if ( ! this.staticExecuted) {
             let arrClasses = [];
             let objClasses = this.program.getClasses();
@@ -113,7 +113,7 @@ class Interpreter {
         variable.isStatic = baseScope.staticContext;
         if (statement.getInitializer() != null) {
             variable.value = this.executeExpr(baseScope, baseScope, statement.getInitializer()).value;
-            // Garante que um inteiro vai ter o tipo double
+            // Ensures that an integer will have the double type
             if (statement.type == 'double' && variable.value instanceof PrimitiveValue) {
                 variable.value.type = variable.type;
             }
@@ -122,12 +122,6 @@ class Interpreter {
     }
 
     private executeExpr(originalScope: BaseScope, scope: BaseScope, statement: Ast.ExprNode): ExecuteExprResult {
-        // if (statement instanceof Ast.NewExprNode) {
-        //     let newObject = new ObjectValue(this.program.resolveClass(statement.className));
-        //     let baseMethod = newObject.getClass().getConstructor([]);
-        //     //this.executeObjectMethod(newObject, baseMethod);
-        //     return newObject;
-        // }
 
         if (statement instanceof Ast.PrimitiveExprNode) {
             let pv = new PrimitiveValue(statement.runtimeType, statement.value);
@@ -151,7 +145,7 @@ class Interpreter {
                     }
                     scope = scope.objectValue;
                 } else {
-                    scope = scope.objectValue.fatherScope;
+                    scope = scope.objectValue.superScope;
                     onlyLookUp = true;
                 }
             }
@@ -173,7 +167,7 @@ class Interpreter {
 
         console.log(statement);
 
-        console.error('Expressão não implementada');
+        console.error('Not implemented expression');
         return null;
     }
 
@@ -183,24 +177,24 @@ class Interpreter {
             return;
         }
 
-        // Criando escopo de execução do construtor
+        // Creating execution scope for contructor
         let scope = new LocalScope(obj, obj.ownerClass, false);
 
-        // Definindo argumentos
+        // Defining arguments
         let methodArguments = baseMethod.getArguments();
         this.defineArguments(scope, methodArguments, args);
 
-        // Como é um constructor, pode ter um super
+        // Handle super() call
         if (baseMethod instanceof UserMethod) {
             let statement = baseMethod.getMethodDeclaration().getBlockStatement().getStatements()[0];
             if (typeof statement != 'undefined' && statement instanceof Ast.SuperCall) {
                 let argsSuper = this.executeListExpr(scope, scope, statement.getArgs());
                 let baseMethodSuper = obj.ownerClass.getExtendedClass().getConstructor(this.arrValueToType(argsSuper));
-                this.executeObjectConstructor(obj.fatherScope, baseMethodSuper, argsSuper);
+                this.executeObjectConstructor(obj.superScope, baseMethodSuper, argsSuper);
             }
         }
 
-        // Inicializar variáveis
+        // Initiates variables
         let variables = obj.getVariables();
         for (let varName in variables) {
             let variable = variables[varName];
@@ -236,10 +230,10 @@ class Interpreter {
             return baseMethod.implementation(baseScope, args);
         }
 
-        // Criando escopo de execução para o método
+        // Creating execution scope to method
         let scope = new LocalScope(baseScope, baseScope.ownerClass, baseScope.staticContext);
 
-        // Definindo argumentos
+        // Defining arguments
         let methodArguments = baseMethod.getArguments();
         this.defineArguments(scope, methodArguments, args);
 
@@ -261,7 +255,7 @@ class Interpreter {
     private executeStatements(baseScope: BaseScope, statements: Array<Ast.Statement>): void {
         for (let i = 0; i < statements.length; i++) {
             let statement = statements[i];
-            //console.info('executando linha: ' + statement.sourceRange.startLine + ' arquivo: ' + statement.fileName);
+            //console.info('executing line: ' + statement.sourceRange.startLine + ' file: ' + statement.fileName);
             if (statement instanceof Ast.ReturnStatement) {
                 if (statement.getExpression()) {
                     let valueReturn = this.executeExpr(baseScope, baseScope, statement.getExpression());
@@ -275,7 +269,7 @@ class Interpreter {
                     let strPrint = '';
                     if (resultExpr.value instanceof PrimitiveValue) {
                         let value = resultExpr.value.rawValue;
-                        // Printa double com .0 quando é um inteiro
+                        // Prints double with .0 when it is an integer
                         if (resultExpr.value.getType().getTypeName() == 'double') {
                             if (value % 1 == 0) {
                                 value += '.0';
@@ -308,7 +302,7 @@ class Interpreter {
                         this.executeStatements(baseScope, [statement.getStatementsElse()]);
                     }
                 } else {
-                    console.error('ERRO TESTANDO CONDIÇÃO DO IF', statement);
+                    console.error('Error testing if statement', statement);
                 }
             } else if (statement instanceof Ast.ForStatement) {
                 let scope = new LocalScope(baseScope, baseScope.ownerClass, baseScope.staticContext);
@@ -340,7 +334,7 @@ class Interpreter {
 
                     count++;
                     if (count == Interpreter.MAX_ITERATION) {
-                        throw new RuntimeException("Máximo de 1000 interações atingido");
+                        throw new RuntimeException("Maximum of " + Interpreter.MAX_ITERATION + " interations reached");
                     }
                 }
             } else if (statement instanceof Ast.WhileStatement) {
@@ -357,13 +351,13 @@ class Interpreter {
 
                     count++;
                     if (count == Interpreter.MAX_ITERATION) {
-                        throw new RuntimeException("Máximo de 1000 interações atingido");
+                        throw new RuntimeException("Maximum of " + Interpreter.MAX_ITERATION + " interations reached");
                     }
                 }
             } else if (statement instanceof Ast.BlockStatement) {
                 this.executeStatements(baseScope, statement.getStatements());
             } else if (statement instanceof Ast.BasicDebug) {
-                console.log('<<BASICDEBUG>> arquivo: ' + statement.fileName + ' - linha: ' + statement.sourceRange.startLine);
+                console.log('<<BASICDEBUG>> file: ' + statement.fileName + ' - line: ' + statement.sourceRange.startLine);
                 debugger;
             }
         }
@@ -373,20 +367,20 @@ class Interpreter {
         if (statement instanceof Ast.Variable) {
             let variable = scope.resolveVariableSafe(statement.name);
             if (variable == null) {
-                // Se não achou a variável é por que é o nome de uma classe
+                // If it doesn't found the variable it must be a class
                 let baseClass = this.program.resolveClass(statement.name);
                 this.initializeStatics(baseClass);
                 return this.executeMethodOrVariable(originalScope, baseClass, statement.getMethodOrVariable());
             }
-            if (statement.getMethodOrVariable() != null) { // Ainda existe mais coisa para ser resolvida
-                // Se existe mais coisa a ser resolvida, a variável é um objeto
+            if (statement.getMethodOrVariable() != null) { // There is still something to be resolved
+                // If there is something to be resolved still, it is a object
                 if (variable.value instanceof ObjectValue) {
                     scope = variable.value;
                 } else {
                     let methodOrVariable = statement.getMethodOrVariable();
 
                     if (variable.value instanceof PrimitiveValue && variable.value.getType().getTypeName() == "String") {
-                        // Transforma a string em objeto e tenta novamente
+                        // Convert string in object and try again
                         let objValue = new ObjectValue(this.program.getClass('String'));
                         let constructorMethod = objValue.getClass().getConstructor([this.program.resolveType('String')]);
                         this.executeObjectConstructor(objValue, constructorMethod, [variable.value]);
@@ -395,9 +389,9 @@ class Interpreter {
                         return this.executeMethodOrVariable(originalScope, scope, statement, superUsed);
                     }
 
-                    throw new RuntimeException(statement.fileName + ' linha: ' + statement.sourceRange.startLine + ' - '
-                        + ' Tentando acessar ' + (methodOrVariable instanceof Ast.MethodCall ? 'método ' : 'variável ')
-                        + methodOrVariable.name + ' de valor ' + variable.value.getType().getTypeName());
+                    throw new RuntimeException(statement.fileName + ' line: ' + statement.sourceRange.startLine + ' - '
+                        + ' trying to access ' + (methodOrVariable instanceof Ast.MethodCall ? 'method ' : 'variable ')
+                        + methodOrVariable.name + ' of value ' + variable.value.getType().getTypeName());
                 }
                 return this.executeMethodOrVariable(originalScope, scope, statement.getMethodOrVariable());
             }
@@ -406,11 +400,11 @@ class Interpreter {
             let args = this.executeListExpr(originalScope, originalScope, statement.getArgs());
             let baseMethod: BaseMethod;
             if (superUsed) {
-                // Entra aqui quando precisa somente olhar para métodos e propriedades dos pais
+                // Look for methods and proprieties from superclass
                 baseMethod = scope.objectValue.getMethodOnlyUp(statement.name, this.arrValueToType(args));
             } else {
                 if (scope.staticContext == false) {
-                    // Se for contexto não estático, então tem um objeto...
+                    // Use context from object
                     baseMethod = scope.objectValue.getMethodSafe(statement.name, this.arrValueToType(args));
                 } else {
                     baseMethod = scope.getMethodSafe(statement.name, this.arrValueToType(args));
@@ -425,12 +419,11 @@ class Interpreter {
                 value = this.executeMethod(objScope, baseMethod, args);
             }
 
-            if (statement.getMethodOrVariable() != null) { // Ainda existe mais coisa para ser resolvida
-                // Se existe mais coisa a ser resolvida, a variável é um objeto
+            if (statement.getMethodOrVariable() != null) { // Still something to be resolved
                 if (value instanceof ObjectValue) {
                     scope = value;
                 } else {
-                    console.error('Um valor que não seja objeto não pode ter um método ou var para ser resolvido');
+                    console.error('A non-object value can not have a method or variable to be resolved');
                 }
                 return this.executeMethodOrVariable(originalScope, scope, statement.getMethodOrVariable());
             }
