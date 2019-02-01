@@ -400,7 +400,3 @@ export class ReturnStatement extends Statement {
         this.addChild(node);
     }
 }
-
-export class Editavel extends BaseNode {
-
-}

@@ -16,7 +16,7 @@ classBody
     ;
 
 classBodyDeclaration
-    :   ClassMemberAccessModifier? ClassMemberModifier? (fieldDeclaration|methodDeclaration|editavel)
+    :   ClassMemberAccessModifier? ClassMemberModifier? (fieldDeclaration|methodDeclaration)
     ;
 
 fieldDeclaration
@@ -93,10 +93,6 @@ expression
         expression
     ;
 
-editavel
-    :   '@editavel'
-    ;
-
 creator
     :   Identifier arguments
     ;
@@ -135,7 +131,6 @@ blockStatement
     |   basicDebug ';'
     |   forStatement
     |   whileStatement
-    |   editavel
     ;
 
 basicDebug

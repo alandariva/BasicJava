@@ -431,16 +431,9 @@ export class TreeConstructorVisitor extends BasicJavaVisitor {
             return this.visitFieldDeclaration(ctx);
         } else if (ctx.methodDeclaration() != null) {
             return this.visitMethodDeclaration(ctx);
-        } else if (ctx.editavel() != null) {
-            return this.visitEditavel(ctx);
         }
 
         return null;
-    }
-
-    visitEditavel(ctx: any): Ast.Editavel {
-        let node = new Ast.Editavel(ctx, this.fileName);
-        return node;
     }
 
     visitFieldDeclaration(ctx: any): Ast.VariableDeclaration {
@@ -547,8 +540,6 @@ export class TreeConstructorVisitor extends BasicJavaVisitor {
         } else if (ctx.basicDebug() != null) {
             let node = new Ast.BasicDebug(ctx, this.fileName);
             return node;
-        } else if (ctx.editavel() != null) {
-            return this.visitEditavel(ctx);
         } else {
             console.error('AST: statement não reconhecido', ctx);
             return null;
