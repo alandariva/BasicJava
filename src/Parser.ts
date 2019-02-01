@@ -1072,7 +1072,7 @@ export class BasicJavaParser {
                                 continue;
                             }
 
-                            // Verifica acesso
+                            // Verifies access modifier
                             if (calledConstructor.getAccessModifier() == util.AccessModifier.Private) {
                                 this.addParserErrorNode(
                                     "Constructor " + calledConstructor.getMethodSignature() + " is private",

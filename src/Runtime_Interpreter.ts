@@ -53,7 +53,7 @@ class Interpreter {
             for (let i = 0; i < methods.length; i++) {
                 if (methods[i].getMethodSignature() == signature && methods[i].isStatic() == true) {
                     if (mainMethod != null) {
-                        throw new RuntimeException("Mais de uma classe possúi um método main");
+                        throw new RuntimeException("More than one main method found");
                     }
                     mainMethod = methods[i];
                 }
@@ -64,7 +64,7 @@ class Interpreter {
 
     executeStaticMethod(baseMethod: BaseMethod, args: Array<Value> = []): void {
         if (baseMethod.isStatic() == false) {
-            throw new RuntimeException("O método " + baseMethod.getMethodName() + " não é estático");
+            throw new RuntimeException("Method " + baseMethod.getMethodName() + " is non-static");
         }
 
         // Initiate all statics of the program
@@ -139,7 +139,7 @@ class Interpreter {
             let onlyLookUp = false;
             if (statement.thisOrSuper != null) {
                 if (statement.thisOrSuper == 'this') {
-                    // Verifica se apenas não foi usado o this
+                    // Verifies if only "this" was used
                     if (statement.getMethodOrVariable() == null) {
                         return {value: scope.objectValue};
                     }
