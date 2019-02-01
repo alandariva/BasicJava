@@ -4,8 +4,11 @@ import { Exception } from "../src/Util";
 
 const fs = require('fs');
 
-export function getFileContents(path) {
-    return fs.readFileSync(path, 'utf8');
+export function getFileContents(path): string {
+    return fs
+        .readFileSync(path, 'utf8')
+        // normalize new line to \r\n
+        .replace(/\r?\n/g, "\r\n");
 }
 
 export function compileAndExecuteFiles(files: string[]): string {
